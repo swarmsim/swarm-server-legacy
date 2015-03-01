@@ -78,6 +78,7 @@
                   .fail(function(data, status, xhr) {;
                     if (data.status === 404) {
                       console.log('s3 get2 404 after delete', data, status, xhr);
+                      console.info('Everything works perfectly!');
                     }
                     else {
                       console.error('s3 get2 fail', data.status, data, status, xhr);
