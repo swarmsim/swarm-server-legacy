@@ -15,6 +15,7 @@
   </p>
 <% end %>
 
+<p><a href="/policies/21627386/1dd85395a2291302abdb80e5eeb2ec3a80f594ddaca92fa7606571e5af69e881">Working example (dev only)</a></p>
 <div id="log"></div>
 
 <script>
@@ -26,10 +27,26 @@
   // * get again from S3, verify it's a 404
   var id = $('#policy_user_id').val();
   var token = $('#policy_game_auth_token').val();
-  console.log('id+token', id, token);
+  var logger = {};
+  var verbs = {log:'black', info:'blue', warn:'yellow', error:'red'};
+  for (var verb in verbs) {
+    (function(verb){
+      var color = verbs[verb];
+      logger[verb] = function() {
+        console[verb].apply(console, arguments);
+        var args = [];
+        for (i=0; i < arguments.length; i++) {
+          args[i] = arguments[i];
+        }
+        args = args.join(', ');
+        $('#log').append('<p style="color:'+color+';">'+args+'</p>');
+      }
+    })(verb);
+  }
+  logger.log('id+token', id, token);
   // fetch a policy document from this server. Swarmsim will save this in a cookie for a day or so, no need to refresh every session.
   $.post('/policies', {policy:{user_id:id, game_auth_token:token}}, function(spec, status, xhr) {
-    console.log('create policy', spec, status, xhr);
+    logger.log('create policy', spec, status, xhr);
     if (status != 'success') {
       return
     }
@@ -38,7 +55,7 @@
     var postbody = new FormData();
     for (var prop in spec.post.params) {
       if (spec.post.params.hasOwnProperty(prop)) {
-        console.log('form keyval', prop, spec.post.params[prop]);
+        logger.log('form keyval', prop, spec.post.params[prop]);
         postbody.append(prop, spec.post.params[prop]);
       }
     }
@@ -53,39 +70,39 @@
       processData: false,
       type: 'POST',
       error: function(data, status, xhr){
-        console.error('s3 post fail', data.responseText, data, status, xhr);
+        logger.error('s3 post fail', data.responseText, data, status, xhr);
       },
       success: function(data, status, xhr){
-        console.log('s3 post success', data, status, xhr, spec.get);
+        logger.log('s3 post success', data, status, xhr, spec.get);
         // try the get url to see if the s3 post really worked.
         $.get(spec.get)
           .fail(function(data, status, xhr) {;
-            console.error('s3 get fail', data, status, xhr);
+            logger.error('s3 get fail', data, status, xhr);
           })
           .success(function(data, status, xhr) {
-            console.log('s3 get success', data, status, xhr);
+            logger.log('s3 get success', data, status, xhr);
             // try deleting, too.
             $.ajax({
               type: 'DELETE',
               url: spec.delete,
               error: function(data, status, xhr){
-                console.error('s3 delete fail', data.responseText, data, status, xhr);
+                logger.error('s3 delete fail', data.responseText, data, status, xhr);
               },
               success: function(data, status, xhr){
-                console.log('s3 delete success', data, status, xhr);
+                logger.log('s3 delete success', data, status, xhr);
                 // get again, to verify the delete worked.
                 $.get(spec.get)
                   .fail(function(data, status, xhr) {;
                     if (data.status === 404) {
-                      console.log('s3 get2 404 after delete', data, status, xhr);
-                      console.info('Everything works perfectly!');
+                      logger.log('s3 get2 404 after delete', data, status, xhr);
+                      logger.info('Everything works perfectly!');
                     }
                     else {
-                      console.error('s3 get2 fail', data.status, data, status, xhr);
+                      logger.error('s3 get2 fail', data.status, data, status, xhr);
                     }
                   })
                   .success(function(data, status, xhr) {
-                    console.error('s3 get2 success?! should be 404!', data, status, xhr);
+                    logger.error('s3 get2 success?! should be 404!', data, status, xhr);
                   });
               },
             });
