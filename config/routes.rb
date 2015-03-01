@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  get 'policies' => 'policies#new'
+  get 'policies/:user_id' => 'policies#new'
+  get 'policies/:user_id/:game_auth_token' => 'policies#new'
+
+  post 'policies' => 'policies#create'
+
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 

@@ -1,0 +1,95 @@
+<h1>Policies#new</h1>
+<%= form_for :policy, url: policies_path do |f| %>
+  <p>
+    <%= f.label :user_id %><br>
+    <%= f.text_field :user_id, :value => params[:user_id] %>
+  </p>
+ 
+  <p>
+    <%= f.label :game_auth_token %><br>
+    <%= f.text_field :game_auth_token, :value => params[:game_auth_token] %>
+  </p>
+ 
+  <p>
+    <%= f.submit %>
+  </p>
+<% end %>
+
+<div id="log"></div>
+
+<script>
+  // this test has five parts: 
+  // * fetch a policy document from this server. Swarmsim will save this in a cookie for a day or so, no need to refresh every session.
+  // * post some json to S3 with a multipart post. sync-export.
+  // * get some json from S3. sync-import.
+  // * delete from S3.
+  // * get again from S3, verify it's a 404
+  var id = $('#policy_user_id').val();
+  var token = $('#policy_game_auth_token').val();
+  console.log('id+token', id, token);
+  // fetch a policy document from this server. Swarmsim will save this in a cookie for a day or so, no need to refresh every session.
+  $.post('/policies', {policy:{user_id:id, game_auth_token:token}}, function(spec, status, xhr) {
+    console.log('create policy', spec, status, xhr);
+    if (status != 'success') {
+      return
+    }
+    // post to S3. S3 requires a multipart post, which is not the default and is kind of a huge pain.
+    // worth it overall, though.
+    var postbody = new FormData();
+    for (var prop in spec.post.params) {
+      if (spec.post.params.hasOwnProperty(prop)) {
+        console.log('form keyval', prop, spec.post.params[prop]);
+        postbody.append(prop, spec.post.params[prop]);
+      }
+    }
+    postbody.append('file', new Blob(['{"thejson":"hello world, file content"}'], {type: 'application/json'}));
+    // https://aws.amazon.com/articles/1434
+    // https://stackoverflow.com/questions/5392344/sending-multipart-formdata-with-jquery-ajax
+    $.ajax({
+      url: spec.post.url,
+      data: postbody,
+      cache: false,
+      contentType: false,
+      processData: false,
+      type: 'POST',
+      error: function(data, status, xhr){
+        console.error('s3 post fail', data.responseText, data, status, xhr);
+      },
+      success: function(data, status, xhr){
+        console.log('s3 post success', data, status, xhr, spec.get);
+        // try the get url to see if the s3 post really worked.
+        $.get(spec.get)
+          .fail(function(data, status, xhr) {;
+            console.error('s3 get fail', data, status, xhr);
+          })
+          .success(function(data, status, xhr) {
+            console.log('s3 get success', data, status, xhr);
+            // try deleting, too.
+            $.ajax({
+              type: 'DELETE',
+              url: spec.delete,
+              error: function(data, status, xhr){
+                console.error('s3 delete fail', data.responseText, data, status, xhr);
+              },
+              success: function(data, status, xhr){
+                console.log('s3 delete success', data, status, xhr);
+                // get again, to verify the delete worked.
+                $.get(spec.get)
+                  .fail(function(data, status, xhr) {;
+                    if (data.status === 404) {
+                      console.log('s3 get2 404 after delete', data, status, xhr);
+                    }
+                    else {
+                      console.error('s3 get2 fail', data.status, data, status, xhr);
+                    }
+                  })
+                  .success(function(data, status, xhr) {
+                    console.error('s3 get2 success?! should be 404!', data, status, xhr);
+                  });
+              },
+            });
+          });
+      },
+    });
+  })
+</script>
