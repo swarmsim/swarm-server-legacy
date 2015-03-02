@@ -28,12 +28,11 @@ class PoliciesController < ApplicationController
     end
     # valid user! give them a policy document.
     # http://docs.aws.amazon.com/sdkforruby/api/index.html
-    # use ENV['AWS_ACCESS_KEY_ID'] and ENV['AWS_SECRET_ACCESS_KEY'] and ENV['AWS_REGIION']
+    # use ENV['AWS_ACCESS_KEY_ID'] and ENV['AWS_SECRET_ACCESS_KEY'] and ENV['AWS_REGION']
     signer = Aws::S3::Presigner.new
-    key = "#{policy[:game_auth_token]}_#{policy[:user_id]}.json"
+    key = "/saves/#{policy[:game_auth_token]}_#{policy[:user_id]}.json"
     expires_in = 1.day
-    # TODO configify bucket
-    bucket = 'swarmsim-dev'
+    bucket = Rails.application.secrets.bucket
     policy = {
       :expiration => expires_in.from_now.utc.strftime('%Y-%m-%dT%H:%M:%S.000Z'),
       :conditions => [
