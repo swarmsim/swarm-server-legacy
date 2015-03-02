@@ -1,6 +1,8 @@
 require 'net/http'
 
 class PoliciesController < ApplicationController
+  skip_before_filter :verify_authenticity_token
+
   def new
     # no-op, this is just an input form for create
   end
