@@ -26,7 +26,12 @@ class PoliciesController < ApplicationController
     body = JSON.parse res.body
     #render plain: body ; return
     if not body["success"]
-      render plain: body.inspect ; return
+      #render plain: body.inspect ; return
+      errorcode = 500
+      if body["error"] >= 400 && body["error"] < 500
+        errorcode = 400
+      end
+      render json: body, :status => errorcode; return
     end
     # valid user! give them a policy document.
     # http://docs.aws.amazon.com/sdkforruby/api/index.html

@@ -45,7 +45,11 @@
   }
   logger.log('id+token', id, token);
   // fetch a policy document from this server. Swarmsim will save this in a cookie for a day or so, no need to refresh every session.
-  $.post('/policies', {policy:{user_id:id, game_auth_token:token}}, function(spec, status, xhr) {
+  $.post('/policies', {policy:{user_id:id, game_auth_token:token}})
+  .error(function(data, status, xhr) {
+    logger.error('create policy error', data, status, xhr);
+  })
+  .success(function(spec, status, xhr) {
     logger.log('create policy', spec, status, xhr);
     if (status != 'success') {
       return
