@@ -76,6 +76,8 @@ class PoliciesController < ApplicationController
         "Content-type" => 'application/json',
       }
     }
+    ret[:expiresIn] = expires_in
+    ret[:serverDate] = {:refreshed => 0.seconds.from_now.utc.to_f, :expires => expires_in.from_now.utc.to_f}
     render json: ret ; return
   end
 end
