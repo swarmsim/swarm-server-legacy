@@ -47,7 +47,7 @@ class PoliciesController < ApplicationController
         {:key => key},
         {:acl => 'private'},
         {"Content-Type" => 'application/json'},
-        ["content-length-range", 0, 8192]
+        ["content-length-range", 0, 16384]
       ]
     }
     #render plain: policy.inspect; return
